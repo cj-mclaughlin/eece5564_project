@@ -119,9 +119,9 @@ We could do some small comparison between different feature extractors, but that
 from torchvision.models import resnet18, resnet50
 
 # model = resnet18(pretrained=True)
-model =  resnet50(pretrained=True)
+model =  resnet18(pretrained=True)
 model.fc = torch.nn.Identity()  # remove FC layer for feature extraction
-model.cuda()
+model.to("mps")
 model.eval()
 
 """#### Data Loaders"""
@@ -148,7 +148,7 @@ with torch.no_grad():
     cifar10_features = []
     cifar10_labels = []
     for image, label in tqdm(cifar10_test):
-        image = image.cuda()
+        image = image.to("mps")
         features = model(image).detach().cpu().numpy()
         cifar10_features.append(features)
         cifar10_labels.append(label.numpy())
@@ -172,7 +172,7 @@ with torch.no_grad():
     }
     for corruption in CORRUPTED_CATEGORIES:
         for image, label in tqdm(cifar10c[corruption]):
-            image = image.cuda()
+            image = image.to("mps")
             features = model(image).detach().cpu().numpy()
             cifar10c_features[corruption].append(features)
             cifar10c_labels[corruption].append(label.numpy())
