@@ -67,7 +67,7 @@ eval_gmm = False
 eval_model = True
 
 ### FULL DATASET ACCURACY
-model = LogisticRegressionCV().fit(cifar10_features, cifar10_labels)
+# model = LogisticRegressionCV().fit(cifar10_features, cifar10_labels)
 # print("Clean CIFAR10 Accuracy:")
 # print(np.mean(cross_val_score(model, cifar10_features, cifar10_labels, n_jobs=-1, cv=4)))
 
@@ -147,17 +147,21 @@ def bhatta_dist(d1, d2):
     return dist
 
 ## Correlation of Losses
-losses = {}
-losses["clean"] = compute_losses(cifar10_features, cifar10_labels, model)
-for corruption in CORRUPTED_CATEGORIES:
-    features = cifar10c_features_sev3[corruption]
-    labels = cifar10_labels
-    losses[corruption] = compute_losses(features, labels, model)
+# losses = {}
+# losses["clean"] = compute_losses(cifar10_features, cifar10_labels, model)
+# for corruption in CORRUPTED_CATEGORIES:
+#     features = cifar10c_features_sev3[corruption]
+#     labels = cifar10_labels
+#     losses[corruption] = compute_losses(features, labels, model)
 
-df = pd.DataFrame(losses)
-corr = df.corr()
-sns.heatmap(corr)
-plt.show()
+# df = pd.DataFrame(losses)
+# ix = df.corr().sort_values('clean', ascending=False).index
+# df_sorted = df.loc[:, ix]
+# corr = df_sorted.corr()
+# plt.figure(figsize=(12, 10))
+# plt.tight_layout()
+# sns.heatmap(corr, cmap="Blues", annot=True, linewidth=.5, fmt=".1f")
+# plt.show()
 
 # # compute class conditional gaussians for each category
 # ccgs = {}
@@ -187,11 +191,13 @@ def plot_dim_reduction(reducer, features, labels, title='', ):
     plt.title(title)
     plt.xlabel("Component 1")
     plt.ylabel("Component 2")
-    plt.savefig(title+".png")
-    plt.show()
+    # plt.legend(labels=["Clean", "Corrupted"])
+    plt.savefig(title+".png", bbox_inches="tight")
+    plt.cla()
+    # plt.show()
 
 # plot_dim_reduction(lda_viz, cifar10_features, cifar10_labels, title="LDA Features (CIFAR10)")
-plot_dim_reduction(pca, cifar10_features, cifar10_labels, title="PCA Features (CIFAR10)")
+# plot_dim_reduction(pca, cifar10_features, cifar10_labels, title="PCA Features (CIFAR10)")
 
 cifar10_features_c0 = cifar10_features[cifar10_labels == 0]
 cifar10_labels_c0 = cifar10_labels[cifar10_labels == 0]
@@ -202,4 +208,18 @@ for corruption in CORRUPTED_CATEGORIES:
 
     all_feats = np.concatenate([cifar10_features_c0, corrupt_feat], axis=0)
     all_labels = np.concatenate([np.zeros_like(cifar10_labels_c0), np.ones_like(corrupt_label)], axis=0)
-    plot_dim_reduction(pca, all_feats, all_labels, title=f"Clean vs. '{corruption}' Corruption")
+    text_labels = np.where(all_labels == 0, "Clean", "Corrupted")
+    plot_dim_reduction(pca, all_feats, text_labels, title=f"Clean vs. '{corruption}' Corruption")
+
+# show different levels of noise
+corrupt1 = cifar10c_features_sev1["gaussian_noise"][cifar10c_labels[corruption] == 0]
+c1_label = ["Mild"] * len(corrupt1)
+corrupt3 = cifar10c_features_sev3["gaussian_noise"][cifar10c_labels[corruption] == 0]
+c3_label = ["Moderate"] * len(corrupt3)
+corrupt5 = cifar10c_features_sev5["gaussian_noise"][cifar10c_labels[corruption] == 0]
+c5_label = ["High"] * len(corrupt5)
+
+feats = np.concatenate([cifar10_features_c0, corrupt1, corrupt3, corrupt5], axis=0)
+clean_label = ["Clean"] * len(corrupt1)
+labels = np.concatenate([clean_label, c1_label, c3_label, c5_label], axis=0)
+plot_dim_reduction(pca, feats, labels, title=f"Levels of Gaussian Noise Corruption")
