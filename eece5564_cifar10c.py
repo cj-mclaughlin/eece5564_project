@@ -44,16 +44,19 @@ CORRUPTED_CATEGORIES = [
 CIFAR10_MEAN = [0.4913997551666284, 0.48215855929893703, 0.4465309133731618]
 CIFAR10_STD = [0.24703225141799082, 0.24348516474564, 0.26158783926049628]
 
-IMAGE_SIZE = 224, 224
+# 32, 32 -- does not matter much for our application!
+IMAGE_SIZE = 224, 224  
 
-train_transform = transforms.Compose([
-    transforms.Pad(4, padding_mode='reflect'),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Resize(IMAGE_SIZE),
-    transforms.Normalize(mean=CIFAR10_MEAN, std=CIFAR10_STD)
-])
-
+# we are not using typical CIFAR10 data augmentation
+# instead, use test transform for feature extraction and
+# perform statistical ML classification / viz
+# train_transform = transforms.Compose([
+#     transforms.Pad(4, padding_mode='reflect'),
+#     transforms.RandomHorizontalFlip(),
+#     transforms.ToTensor(),
+#     transforms.Resize(IMAGE_SIZE),
+#     transforms.Normalize(mean=CIFAR10_MEAN, std=CIFAR10_STD)
+# ])
 
 test_transform = transforms.Compose([
     transforms.ToTensor(),
@@ -73,6 +76,9 @@ class CIFAR10C(Dataset):
             self.data = np.concatenate([np.load(f"{DATA_PATH}{category}.npy") for category in CORRUPTED_CATEGORIES], axis=0)
             self.targets = np.tile(np.load(f"{DATA_PATH}/labels.npy"), reps=len(CORRUPTED_CATEGORIES))
         else:
+            # INDEXING INDICATES WHICH SEVERITY CORRUPTION
+            # EACH SET OF 10000 is a different severity level
+            # current parameters are for extracting severity=5
             self.data = np.load(f"{DATA_PATH}{category}.npy")[40000:50000]
             self.targets = np.load(f"{DATA_PATH}/labels.npy")[40000:50000]
 
@@ -88,7 +94,7 @@ class CIFAR10C(Dataset):
         return len(self.data)
 
 def cifar10_dataloaders(batch_size=32, num_workers=2):
-    train_data = CIFAR10(root=DATA_PATH, download=True, train=True, transform=train_transform)
+    train_data = CIFAR10(root=DATA_PATH, download=True, train=True, transform=test_transform)
     test_data = CIFAR10(root=DATA_PATH, train=False, transform=test_transform)
 
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=num_workers, drop_last=True)
@@ -179,6 +185,8 @@ with torch.no_grad():
         cifar10c_features[corruption] = np.concatenate(cifar10c_features[corruption], axis=0)
         cifar10c_labels[corruption] = np.concatenate(cifar10c_labels[corruption], axis=0)
 
+
+# rerun with other severity levels.
 with open('cifar10c_features_sev5.pickle', 'wb') as handle:
     pickle.dump(cifar10c_features, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
